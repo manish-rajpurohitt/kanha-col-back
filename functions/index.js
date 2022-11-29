@@ -7,6 +7,7 @@ const path = require('path');
 const helmet = require('helmet');
 const Mongoose = require('mongoose');
 const slug = require('mongoose-slug-generator');
+const functions = require("firebase-functions");
 
 const keys = require('./config/keys');
 const routes = require('./routes');
@@ -30,8 +31,8 @@ app.use(
     frameguard: true
   })
 );
+console.log(process.env)
 app.use(cors());
-app.use(express.static(path.resolve(__dirname, '../dist')));
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_NAME,
@@ -55,3 +56,5 @@ const server = app.listen(port, () => {
 });
 
 socket(server);
+
+exports.app = functions.https.onRequest(app);
