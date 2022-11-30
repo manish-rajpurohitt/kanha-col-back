@@ -26,27 +26,28 @@ router.post('/add', auth, async (req, res) => {
       total,
       selectedAddress: req.body.selectedAddress
     });
-    
+
     let body = {
       "order_id": order._id,
       "order_amount": total,
       "order_currency": "INR",
       "customer_details": {
-       "customer_id": req.user._id,
+        "customer_id": req.user._id,
         "customer_name": req.user.firstName,
         "customer_email": req.user.email,
-        "customer_phone": req.user.phoneNumber? req.user.phoneNumber : "+918297997256"
+        "customer_phone": req.user.phoneNumber ? req.user.phoneNumber : "+918297997256"
       },
-      "order_meta":{
-        "notify_url": process.env.BASE_URL + "order/handleCashfreeWebhook"
-      } 
+      "order_meta": {
+        "notify_url": process.env.BASE_URL + "order/handleCashfreeWebhook",
+        "return_url": "https://kanhacollections.in/order/{order_id}"
+      }
     }
     console.log(body)
     let response = await makePostCashfreeAsyncCall(process.env.CASHFREE_BASE_URL + "pg/orders", body);
 
     const orderDoc = await order.save();
 
-    const orderUpdate = await Order.updateOne({ _id : order._id}, {paymentLink: response.payment_link, paymentStatus: "LINK_GENERATED"})
+    const orderUpdate = await Order.updateOne({ _id: order._id }, { paymentLink: response.payment_link, paymentStatus: "LINK_GENERATED" })
     console.log(orderUpdate);
 
     const cartDoc = await Cart.findById(orderDoc.cart._id).populate({
@@ -80,14 +81,14 @@ router.post('/add', auth, async (req, res) => {
   }
 });
 
-router.post('/checkPayment', async (req, res)=>{
+router.post('/checkPayment', async (req, res) => {
   const orderId = req.body.orderId;
 
   const order = await Order.findById(orderId);
 
   let response = await makeGetCashfreeAsyncCall(process.env.CASHFREE_BASE_URL + "pg/orders/" + orderId);
-  if(response.order_status === "PAID"){
-    await Order.updateOne({_id: orderId}, {paymentStatus: "PAYMENT_SUCCESS"});
+  if (response.order_status === "PAID") {
+    await Order.updateOne({ _id: orderId }, { paymentStatus: "PAYMENT_SUCCESS" });
 
     res.status(200).json({
       success: true,
@@ -95,21 +96,21 @@ router.post('/checkPayment', async (req, res)=>{
       payment: order.paymentLink
     });
     return;
-  }else if(response.order_status === "EXPIRED"){
+  } else if (response.order_status === "EXPIRED") {
     let body = {
       "order_id": orderId,
       "order_amount": order.total,
       "order_currency": "INR",
       "customer_details": {
-       "customer_id": req.user._id,
+        "customer_id": req.user._id,
         "customer_name": req.user.firstName,
         "customer_email": req.user.email,
-        "customer_phone": req.user.phoneNumber? req.user.phoneNumber : "+918297997256"
-      } 
+        "customer_phone": req.user.phoneNumber ? req.user.phoneNumber : "+918297997256"
+      }
     }
     let generateRes = await makePostCashfreeAsyncCall(process.env.CASHFREE_BASE_URL + "pg/orders", body);
-    order = await Order.updateOne({_id: orderId}, {paymentStatus: "PAYMENT_LINK_GENERATED", paymentLink: generateRes.payment_link});
-  
+    order = await Order.updateOne({ _id: orderId }, { paymentStatus: "PAYMENT_LINK_GENERATED", paymentLink: generateRes.payment_link });
+
     res.status(200).json({
       success: true,
       message: "Payment link refreshed",
@@ -117,7 +118,7 @@ router.post('/checkPayment', async (req, res)=>{
     });
 
     return;
-  }else{
+  } else {
     console.log(order);
     res.status(200).json({
       success: true,
@@ -126,22 +127,22 @@ router.post('/checkPayment', async (req, res)=>{
     });
     return;
   }
-  
+
 })
 
-router.post('/handleCashfreeWebhook', async (req, res)=>{
+router.post('/handleCashfreeWebhook', async (req, res) => {
   var body = req.body.data;
   console.log(body.order.order_id)
   console.log(body.payment.payment_status)
 
 
-  if(body.payment.payment_status === "SUCCESS"){
-    let od = await Order.findById({_id : body.order.order_id});
-    await Order.updateOne({_id : body.order.order_id}, {paymentStatus: "PAYMENT_SUCCESS"})
+  if (body.payment.payment_status === "SUCCESS") {
+    let od = await Order.findById({ _id: body.order.order_id });
+    await Order.updateOne({ _id: body.order.order_id }, { paymentStatus: "PAYMENT_SUCCESS" })
     res.status(200).json({
       success: true
     });
-  }else{
+  } else {
     res.status(200).json({
       success: false
     });
@@ -411,9 +412,8 @@ router.put('/status/item/:itemId', auth, async (req, res) => {
         return res.status(200).json({
           success: true,
           orderCancelled: true,
-          message: `${
-            req.user.role === role.ROLES.Admin ? 'Order' : 'Your order'
-          } has been cancelled successfully`
+          message: `${req.user.role === role.ROLES.Admin ? 'Order' : 'Your order'
+            } has been cancelled successfully`
         });
       }
 
