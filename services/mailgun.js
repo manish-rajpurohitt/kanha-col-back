@@ -2,8 +2,20 @@ const Mailgun = require('mailgun-js');
 
 const template = require('../config/template');
 const keys = require('../config/keys');
+const nodemailer = require("nodemailer");
 
 const { key, domain, sender } = keys.mailgun;
+
+let transporter = nodemailer.createTransport({
+  host: "smtp.gmail.email",
+  port: 587,
+  service: "gmail",
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: process.env.EMAIL_HOST, // generated ethereal user
+    pass: process.env.EMAIL_KEY, // generated ethereal password
+  },
+});
 
 class MailgunService {
   init() {
@@ -31,7 +43,10 @@ exports.sendEmail = async (email, type, host, data) => {
       text: message.text
     };
 
-    return await mailgun.messages().send(config);
+    let info = await transporter.sendMail(config);
+
+    //   return await mailgun.messages().send(config);
+    return info.accepted;
   } catch (error) {
     return error;
   }

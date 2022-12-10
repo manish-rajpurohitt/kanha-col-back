@@ -182,7 +182,7 @@ router.post('/forgot', async (req, res) => {
     await mailgun.sendEmail(
       existingUser.email,
       'reset',
-      req.headers.host,
+      "https://kanhacollections.in",
       resetToken
     );
 
